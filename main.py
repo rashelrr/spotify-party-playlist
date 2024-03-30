@@ -4,7 +4,7 @@ import os
 
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
-from flask import Flask, redirect, request, jsonify, session
+from flask import Flask, redirect, request, jsonify, session, render_template
 
 load_dotenv()
 
@@ -76,14 +76,16 @@ def get_playlists():
     if datetime.now().timestamp() > session['expires_at']:
         return redirect('/refresh_token')
     
-    headers = {
+    ### CODE HERE: Add spotify webplayer (play a playlist)
+    return render_template('index.html')
+    '''headers = {
         'Authorization': f"Bearer {session['access_token']}"
     }
 
     response = requests.get(API_BASE_URL + "me/playlists", headers=headers)
     playlists = response.json()
 
-    return jsonify(playlists)
+    return jsonify(playlists)'''
 
 @app.route('/refresh_token')
 def refresh_token():
