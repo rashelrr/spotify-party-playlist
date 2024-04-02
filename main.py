@@ -22,13 +22,12 @@ API_BASE_URL = 'https://api.spotify.com/v1/'
 
 @app.route('/')
 def index():
-    return "Welcome to my Spotify app <a href='/login'>Login with Spotify</a>"
+    return "Welcome to my Spotify app <a href='/login'>Host Login</a>"
 
 @app.route('/login')
 def login():
-    # user subscription details and email address and private playlists
-    scope = 'user-read-private user-read-email playlist-read-private' 
-    # TODO: Add to scope 'playlist-modify-public' to create a public playlist
+    # user subscription details, email address, private playlists, create public playlists
+    scope = 'user-read-private user-read-email playlist-read-private playlist-modify-public playlist-modify-private' 
 
     params = {
         'client_id': CLIENT_ID,
@@ -65,18 +64,31 @@ def callback():
         session['refresh_token'] = token_info['refresh_token']
         session['expires_at'] = datetime.now().timestamp() + token_info['expires_in'] # seconds
 
-        return redirect('/playlists')
+        return redirect('/createPlaylist')
 
-@app.route('/playlists')
+@app.route('/createPlaylist', methods=('GET', 'POST'))
 def get_playlists():
-    if 'access_token' not in session:
-        return redirect('/login')
-   
-    # check if access token is expired
-    if datetime.now().timestamp() > session['expires_at']:
-        return redirect('/refresh_token')
+    if request.method == 'POST': # data from form
+        if 'access_token' not in session:
+            return redirect('/login')
     
-    ### CODE HERE: Add spotify webplayer (play a playlist)
+        # check if access token is expired
+        if datetime.now().timestamp() > session['expires_at']:
+            return redirect('/refresh_token')
+        
+        # https://www.digitalocean.com/community/tutorials/how-to-use-web-forms-in-a-flask-application#step-1-displaying-messages
+        playlistName = request.form['pname']
+        numSongs = int(request.form['numSongs'])
+        genres = request.form['genres']
+
+        # Later on: Confirm genres entered exist, else ask user to retype
+        # TODO: create new empty playlist with playlistname
+        # get user's top tracks
+        # filter top tracks by genres given
+        # get recommendations based on top tracks
+        return 
+
+    ### GET: Playlist Page
     return render_template('index.html')
     '''headers = {
         'Authorization': f"Bearer {session['access_token']}"
@@ -108,7 +120,7 @@ def refresh_token():
         session['access_token'] = new_token_info['access_token']
         session['expires_at'] = datetime.now().timestamp() + new_token_info['expires_in']
 
-        return redirect('/playlists')
+        return redirect('/createPlaylist')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
