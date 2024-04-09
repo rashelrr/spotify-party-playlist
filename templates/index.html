@@ -4,15 +4,18 @@
 </head>
 <body>
     <h1>Create Playlist</h1>
-    <form action="/action_page.php">
-        <label for="pname">Name of New Playlist: </label><br>
-        <input type="text" id="pname" name="pname"><br>
+    <form method="post">
+        <label for="playlistName">Name of New Playlist: </label><br>
+        <input type="text" id="playlistName" name="playlistName" 
+        value="{{ request.form['playlistName'] }}"><br>
 
         <label for="numSongs">Number of Songs Wanted: </label><br>
-        <input type="text" id="numSongs" name="numSongs"><br><br>
+        <input type="number" id="numSongs" name="numSongs"
+        value="{{ request.form['numSongs'] }}" min="1" max="100"><br>
 
         <label for="genres">Genres (comma separated): </label><br>
-        <input type="text" id="genres" name="genres"><br><br>
+        <input type="text" id="genres" name="genres"
+        value="{{ request.form['genres'] }}"><br><br>
 
         <input type="submit" value="Submit">
       </form> 

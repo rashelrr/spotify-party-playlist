@@ -20,6 +20,8 @@ AUTH_URL = 'https://accounts.spotify.com/authorize'
 TOKEN_URL = 'https://accounts.spotify.com/api/token'
 API_BASE_URL = 'https://api.spotify.com/v1/'
 
+new_playlist_info = {}
+
 @app.route('/')
 def index():
     return "Welcome to my Spotify app <a href='/login'>Host Login</a>"
@@ -64,11 +66,12 @@ def callback():
         session['refresh_token'] = token_info['refresh_token']
         session['expires_at'] = datetime.now().timestamp() + token_info['expires_in'] # seconds
 
-        return redirect('/createPlaylist')
+        return redirect('/playlist_host_form')
 
-@app.route('/createPlaylist', methods=('GET', 'POST'))
-def get_playlists():
-    if request.method == 'POST': # data from form
+@app.route('/playlist_host_form/', methods=('GET', 'POST'))
+def playlist_host_form():
+    # POST: get data from form
+    if request.method == 'POST':
         if 'access_token' not in session:
             return redirect('/login')
     
@@ -77,20 +80,19 @@ def get_playlists():
             return redirect('/refresh_token')
         
         # https://www.digitalocean.com/community/tutorials/how-to-use-web-forms-in-a-flask-application#step-1-displaying-messages
-        playlistName = request.form['pname']
-        numSongs = int(request.form['numSongs'])
-        genres = request.form['genres']
+        new_playlist_info['playlist_name'] = request.form['playlistName']
+        new_playlist_info['num_songs'] = int(request.form['numSongs'])
+        new_playlist_info['genres'] = request.form['genres']
 
         # Later on: Confirm genres entered exist, else ask user to retype
-        # TODO: create new empty playlist with playlistname
-        # get user's top tracks
-        # filter top tracks by genres given
-        # get recommendations based on top tracks
-        return 
+        # or: choose multiple genres from a dropdown
+        return redirect('/create_playlist')
 
-    ### GET: Playlist Page
+    # GET: Create Playlist Page
     return render_template('index.html')
-    '''headers = {
+    '''
+    # originally code for getting user's (me) playlists from spotify api
+    headers = {
         'Authorization': f"Bearer {session['access_token']}"
     }
 
@@ -98,6 +100,12 @@ def get_playlists():
     playlists = response.json()
 
     return jsonify(playlists)'''
+
+@app.route('/create_playlist')
+def new_playlist():
+    # TODO: create new empty playlist with playlistname
+    return "<p> this is the new playlist page</p>"
+
 
 @app.route('/refresh_token')
 def refresh_token():
@@ -120,7 +128,7 @@ def refresh_token():
         session['access_token'] = new_token_info['access_token']
         session['expires_at'] = datetime.now().timestamp() + new_token_info['expires_in']
 
-        return redirect('/createPlaylist')
+        return redirect('/playlist_host_form')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
