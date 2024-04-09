@@ -21,6 +21,7 @@ TOKEN_URL = 'https://accounts.spotify.com/api/token'
 API_BASE_URL = 'https://api.spotify.com/v1/'
 
 new_playlist_info = {}
+host_userid = [""]
 
 @app.route('/')
 def index():
@@ -71,14 +72,7 @@ def callback():
 @app.route('/playlist_host_form/', methods=('GET', 'POST'))
 def playlist_host_form():
     # POST: get data from form
-    if request.method == 'POST':
-        if 'access_token' not in session:
-            return redirect('/login')
-    
-        # check if access token is expired
-        if datetime.now().timestamp() > session['expires_at']:
-            return redirect('/refresh_token')
-        
+    if request.method == 'POST':        
         # https://www.digitalocean.com/community/tutorials/how-to-use-web-forms-in-a-flask-application#step-1-displaying-messages
         new_playlist_info['playlist_name'] = request.form['playlistName']
         new_playlist_info['num_songs'] = int(request.form['numSongs'])
@@ -86,7 +80,8 @@ def playlist_host_form():
 
         # Later on: Confirm genres entered exist, else ask user to retype
         # or: choose multiple genres from a dropdown
-        return redirect('/create_playlist')
+
+        return redirect('/get_current_userid')
 
     # GET: Create Playlist Page
     return render_template('index.html')
@@ -101,10 +96,47 @@ def playlist_host_form():
 
     return jsonify(playlists)'''
 
+@app.route('/get_current_userid')
+def get_current_userid():
+    if 'access_token' not in session:
+        return redirect('/login')
+    
+    # check if access token is expired
+    if datetime.now().timestamp() > session['expires_at']:
+        return redirect('/refresh_token')
+    
+    headers = {
+        'Authorization': f"Bearer {session['access_token']}"
+    }
+    
+    response = requests.get(API_BASE_URL + "me", headers=headers)
+    resp_json = response.json()
+
+    host_userid[0] = resp_json['id']
+
+    return redirect('/create_playlist')
+
 @app.route('/create_playlist')
-def new_playlist():
-    # TODO: create new empty playlist with playlistname
-    return "<p> this is the new playlist page</p>"
+def create_playlist():
+    if 'access_token' not in session:
+        return redirect('/login')
+    
+    if datetime.now().timestamp() > session['expires_at']:
+        return redirect('/refresh_token')
+
+    headers = {
+        'Authorization': f"Bearer {session['access_token']}"
+    }
+    json = {
+        'name': new_playlist_info['playlist_name'],
+        'description': "New party playlist!",
+        'public': True,
+    }
+    response = requests.post(API_BASE_URL + "users/" + host_userid[0] + "/playlists", headers=headers, json=json)
+    resp_json = response.json()
+    new_playlist_info['playlist_id'] = resp_json['id']
+
+    return new_playlist_info['playlist_id']
 
 
 @app.route('/refresh_token')
