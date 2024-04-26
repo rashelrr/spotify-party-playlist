@@ -22,6 +22,8 @@ API_BASE_URL = 'https://api.spotify.com/v1/'
 
 new_playlist_info = {}
 host_userid = [""]
+track_ids = []
+recommended_tracks = []
 
 @app.route('/')
 def index():
@@ -159,27 +161,19 @@ def get_host_top_tracks():
     resp_json = response.json()
 
     items = resp_json['items']
-    track_ids = ""
-    x = []
     for item in items:
-        track_ids += item['id'] + " "
-        x.append(item['id'])
-    return redirect(url_for('get_host_recs', track_ids=track_ids))
+        track_ids.append(item['id'])
+    return redirect('/get_host_recs')
     
 @app.route('/get_host_recs')
 def get_host_recs():    
-    # Get recommendations based on top tracks (up to 5 tracks only)
-    # TODO: while loop, make recs based on first 5 tracks, then next 5 tracks, and so on
-    # get a bunch of songs
-    # to then filter these songs by genre, get artist's genre, and see if any of the genre filters match (if curr_genre_filter in artistGenres)
+    # Get recommendations based on given top tracks
+    ### to then filter these songs by genre: get artist's genre, and see if any of the genre filters match (if curr_genre_filter in artistGenres)
     
-    track_ids = request.args.get('track_ids').split()
-    recommended_tracks = []
-
     for i in range(0, len(track_ids), 5):
         if 'access_token' not in session:
             return redirect('/login')
-    
+
         if datetime.now().timestamp() > session['expires_at']:
             return redirect('/refresh_token')
 
@@ -196,9 +190,30 @@ def get_host_recs():
         resp_json = response.json()
         tracks = resp_json['tracks']
         for track in tracks:
-            recommended_tracks.append(track['id']) 
+            recommended_tracks.append(track['uri']) 
 
-    return recommended_tracks # expect num of songs requested by host
+    return redirect('/add_songs')
+
+@app.route('/add_songs')
+def add_songs():
+    if 'access_token' not in session:
+        return redirect('/login')
+    
+    if datetime.now().timestamp() > session['expires_at']:
+        return redirect('/refresh_token')
+    
+    headers = {
+        'Authorization': f"Bearer {session['access_token']}"
+    }
+    json = {
+        'uris': recommended_tracks
+    }
+
+    response = requests.post(API_BASE_URL + "playlists/" + new_playlist_info['playlist_id'] + "/tracks", 
+                             headers=headers, json=json)
+    playlist_link = "https://open.spotify.com/playlist/" + new_playlist_info['playlist_id']
+    msg = 'Your custom playlist is ready to listen to on Spotify! <a href="{}">Click here.</a>'.format(playlist_link)
+    return msg
 
 
 @app.route('/refresh_token')
