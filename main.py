@@ -4,7 +4,7 @@ import os
 
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
-from flask import Flask, redirect, request, jsonify, session, render_template
+from flask import Flask, redirect, request, jsonify, session, render_template, url_for
 
 load_dotenv()
 
@@ -30,7 +30,7 @@ def index():
 @app.route('/login')
 def login():
     # user subscription details, email address, private playlists, create public playlists
-    scope = 'user-read-private user-read-email playlist-read-private playlist-modify-public playlist-modify-private' 
+    scope = 'user-read-private user-read-email playlist-read-private playlist-modify-public playlist-modify-private user-top-read' 
 
     params = {
         'client_id': CLIENT_ID,
@@ -136,7 +136,64 @@ def create_playlist():
     resp_json = response.json()
     new_playlist_info['playlist_id'] = resp_json['id']
 
-    return new_playlist_info['playlist_id']
+    return redirect('/get_host_top_tracks')
+
+@app.route('/get_host_top_tracks')
+def get_host_top_tracks():
+    if 'access_token' not in session:
+        return redirect('/login')
+    
+    if datetime.now().timestamp() > session['expires_at']:
+        return redirect('/refresh_token')
+    
+    # by default: gets 20 tracks
+    headers = {
+        'Authorization': f"Bearer {session['access_token']}"
+    }
+    
+    response = requests.get(API_BASE_URL + "me/top/tracks", headers=headers)
+    resp_json = response.json()
+
+    items = resp_json['items']
+    track_ids = ""
+    for item in items:
+        track_ids += item['id'] + " "
+
+    return redirect(url_for('get_host_recs', track_ids=track_ids))
+    
+@app.route('/get_host_recs')
+def get_host_recs():
+    if 'access_token' not in session:
+        return redirect('/login')
+    
+    if datetime.now().timestamp() > session['expires_at']:
+        return redirect('/refresh_token')
+    
+    # Get recommendations based on top tracks (up to 5 tracks only)
+    # TODO: while loop, make recs based on first 5 tracks, then next 5 tracks, and so on
+    # get a bunch of songs
+    # to then filter these songs by genre, get artist's genre, and see if any of the genre filters match (if curr_genre_filter in artistGenres)
+    track_ids = request.args.get('track_ids').split()
+    genres_lst = new_playlist_info['genres'].split(',')
+
+    headers = {
+        'Authorization': f"Bearer {session['access_token']}",
+    }
+    params = {
+        'seed_genres': genres_lst,
+        'seed_tracks': track_ids,
+        'limit': 20
+    }
+
+    response = requests.get(API_BASE_URL + "recommendations", headers=headers, params=params)
+    resp_json = response.json()
+
+    tracks = resp_json['tracks']
+    recommended_tracks = []
+    for track in tracks:
+        recommended_tracks.append(track['id'])
+
+    return recommended_tracks
 
 
 @app.route('/refresh_token')
