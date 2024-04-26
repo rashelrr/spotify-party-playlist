@@ -27,7 +27,7 @@ recommended_tracks = []
 
 @app.route('/')
 def index():
-    return "Welcome to my Spotify app! <a href='/login'>Host Login</a>"
+    return "Welcome to my Spotify app! <a href='/login'>Login</a>"
 
 @app.route('/login')
 def login():
