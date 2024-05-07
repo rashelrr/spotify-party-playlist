@@ -6,17 +6,21 @@
     <h1>Create Playlist</h1>
     <!-- TODO: Check for empty field inputs-->
     <form method="post">
-        <label for="playlistName">Name of New Playlist: </label><br>
+        <label for="playlistName">Name of New Playlist: </label>
         <input type="text" id="playlistName" name="playlistName" 
-        value="{{ request.form['playlistName'] }}"><br>
+        value="{{ request.form['playlistName'] }}" required><br><br>
 
-        <label for="numSongs">Number of Songs Wanted: </label><br>
+        <label for="numSongs">Number of Songs Wanted: </label>
         <input type="number" id="numSongs" name="numSongs"
-        value="{{ request.form['numSongs'] }}" min="1" max="50"><br>
+        value="{{ request.form['numSongs'] }}" min="1" max="50" required><br><br>
 
-        <label for="genres">Genres (comma separated): </label><br>
+        <label for="host_userID">Your Spotify username: </label>
+        <input type="text" id="host_userID" name="host_userID" 
+        value="{{ request.form['host_userID'] }}" required><br><br>
+
+        <!--<label for="genres">Genres (comma separated): </label><br>
         <input type="text" id="genres" name="genres"
-        value="{{ request.form['genres'] }}"><br><br>
+        value="{{ request.form['genres'] }}" required><br><br>-->
 
         <input type="submit" value="Submit">
       </form> 
