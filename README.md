@@ -1,4 +1,4 @@
-# spotify-party-playlist
+# Description
 A web app that uses the Spotify Web API to generate a playlist for a user based on their top X tracks!
 
 ## Installation and Usage
