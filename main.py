@@ -24,10 +24,17 @@ new_playlist_info = {}
 track_ids = []
 recommended_tracks = []
 
+
+'''
+Welcome page
+'''
 @app.route('/')
 def index():
     return "Welcome to my Spotify app! <br><a href='/login'>User click here</a>"
 
+'''
+Purpose: Send request using my credentials to authorize app to use Spotify API
+'''
 @app.route('/login')
 def login():
     # user subscription details, email address, private playlists, create public playlists
@@ -44,12 +51,15 @@ def login():
     auth_url = f"{AUTH_URL}?{urllib.parse.urlencode(params)}"
     return redirect(auth_url)
 
+'''
+Purpose: Handle error or request for an access token
+'''
 @app.route('/callback')
 def callback():
     if 'error' in request.args:
         return jsonify({"error": request.args['error']})
-    # below: login successful!
-    # code: An authorization code that can be exchanged for an access token.
+    # Below: login successful!
+    # 'code': an authorization code that can be exchanged for an access token
     if 'code' in request.args:
         # request for access token
         req_body = {
@@ -63,16 +73,19 @@ def callback():
         response = requests.post(TOKEN_URL, data=req_body)
         token_info = response.json()
 
-        # spotify api sends back access token, refresh token, and expires in data
+        # spotify api sends back access token, refresh token, and expiration
         session['access_token'] = token_info['access_token']
         session['refresh_token'] = token_info['refresh_token']
         session['expires_at'] = datetime.now().timestamp() + token_info['expires_in'] # seconds
 
         return redirect('/playlist_host_form')
 
+'''
+GET: Create Playlist Page
+POST: Pull data from that page
+'''
 @app.route('/playlist_host_form/', methods=('GET', 'POST'))
 def playlist_host_form():
-    # POST: get data from form
     if request.method == 'POST':        
         # https://www.digitalocean.com/community/tutorials/how-to-use-web-forms-in-a-flask-application#step-1-displaying-messages
         new_playlist_info['playlist_name'] = request.form['playlistName']
@@ -80,14 +93,15 @@ def playlist_host_form():
         new_playlist_info['host_userID'] = request.form['host_userID']
         #new_playlist_info['genres'] = request.form['genres']
 
-        # Later on: Confirm genres entered exist, else ask user to retype
-        # or: choose multiple genres from a dropdown
-
+        # Future: Confirm genres entered exist, else ask user to retype
+        # or choose multiple genres from a dropdown
         return redirect('/create_playlist')
 
-    # GET: Create Playlist Page
     return render_template('index.html')
 
+'''
+Purpose: Creates an empty playlist for the user with desired name
+'''
 @app.route('/create_playlist')
 def create_playlist():
     if 'access_token' not in session:
@@ -110,6 +124,9 @@ def create_playlist():
 
     return redirect('/get_host_top_tracks')
 
+'''
+Purpose: Gets a user's top tracks
+'''
 @app.route('/get_host_top_tracks')
 def get_host_top_tracks():
     if 'access_token' not in session:
@@ -135,10 +152,13 @@ def get_host_top_tracks():
         track_ids.append(item['id'])
     return redirect('/get_host_recs')
     
+'''
+Purpose: Gets recommended tracks based on a user's top tracks
+'''
 @app.route('/get_host_recs')
 def get_host_recs():    
-    # Get recommendations based on given top tracks
-    ### to then filter these songs by genre: get artist's genre, and see if any of the genre filters match (if curr_genre_filter in artistGenres)
+    # Future: to filter songs by genre: get artist's genre, and see if any of 
+    # the genre filters match (if curr_genre_filter in artistGenres)
     
     for i in range(0, len(track_ids), 5):
         if 'access_token' not in session:
@@ -164,6 +184,9 @@ def get_host_recs():
 
     return redirect('/add_songs')
 
+'''
+Purpose: Adds recommended tracks to created playlist
+'''
 @app.route('/add_songs')
 def add_songs():
     if 'access_token' not in session:
@@ -185,7 +208,9 @@ def add_songs():
     msg = 'Your custom playlist is ready to listen to on Spotify! <a href="{}">Click here.</a>'.format(playlist_link)
     return msg
 
-
+'''
+Purpose: Requests a new access token if current access token expired
+'''
 @app.route('/refresh_token')
 def refresh_token():
     if 'refresh_token' not in session:
