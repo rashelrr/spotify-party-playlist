@@ -168,12 +168,13 @@ def get_host_recs():
             return redirect('/refresh_token')
 
         subsection_ids = track_ids[i : i + 5]
+        len_ids = len(subsection_ids)
         headers = {
             'Authorization': f"Bearer {session['access_token']}",
         }
         params = {
             'seed_tracks': subsection_ids,
-            'limit': 5
+            'limit': len_ids
         }
 
         response = requests.get(API_BASE_URL + "recommendations", headers=headers, params=params)
