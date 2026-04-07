@@ -1,6 +1,7 @@
 import requests
 import urllib.parse
 import os
+import db
 
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
@@ -14,12 +15,14 @@ app.secret_key = '8b31d560-c969-4dad-a27d-3fbcedae8d4f' # needed to use session
 
 CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
-REDIRECT_URI = 'http://localhost:5000/callback'
+REDIRECT_URI = 'http://127.0.0.1:5000/callback'
 
 AUTH_URL = 'https://accounts.spotify.com/authorize'
 TOKEN_URL = 'https://accounts.spotify.com/api/token'
 API_BASE_URL = 'https://api.spotify.com/v1/'
 
+
+## Tracking data
 new_playlist_info = {}
 track_ids = []
 recommended_tracks = []
@@ -30,6 +33,7 @@ Welcome page
 '''
 @app.route('/')
 def index():
+    #db.init_db() 
     return "Welcome to my Spotify app! <br><a href='/login'>User click here</a>"
 
 '''
@@ -44,8 +48,8 @@ def login():
         'client_id': CLIENT_ID,
         'response_type': 'code',
         'scope': scope,
-        'redirect_uri': REDIRECT_URI
-        # 'show_dialog': True # keep this line for easier debugging, remove once project done
+        'redirect_uri': REDIRECT_URI,
+        'show_dialog': True # keep this line for easier debugging, remove once project done
     }
     
     auth_url = f"{AUTH_URL}?{urllib.parse.urlencode(params)}"
@@ -183,6 +187,7 @@ def get_host_recs():
         for track in tracks:
             recommended_tracks.append(track['uri']) 
 
+    print(recommended_tracks)
     return redirect('/add_songs')
 
 '''
