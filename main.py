@@ -24,8 +24,7 @@ API_BASE_URL = 'https://api.spotify.com/v1/'
 
 ## Tracking data
 new_playlist_info = {} # playlist metadata
-track_ids = [] # top songs
-recommended_tracks = []
+track_uris = []
 
 
 '''
@@ -95,10 +94,6 @@ def playlist_host_form():
         new_playlist_info['playlist_name'] = request.form['playlistName']
         new_playlist_info['num_songs'] = int(request.form['numSongs'])
         new_playlist_info['host_userID'] = request.form['host_userID']
-        #new_playlist_info['genres'] = request.form['genres']
-
-        # Future: Confirm genres entered exist, else ask user to retype
-        # or choose multiple genres from a dropdown
         return redirect('/create_playlist')
 
     return render_template('index.html')
@@ -123,7 +118,7 @@ def create_playlist():
         'public': True,
     }
     response = requests.post(API_BASE_URL + "users/" + new_playlist_info['host_userID'] + "/playlists", headers=headers, json=json)
-    resp_json = response.json() ##
+    resp_json = response.json() 
     new_playlist_info['playlist_id'] = resp_json['id']
 
     return redirect('/get_host_top_tracks')
@@ -139,14 +134,17 @@ def get_host_top_tracks():
     if datetime.now().timestamp() > session['expires_at']:
         return redirect('/refresh_token')
     
-    
     headers = {
         'Authorization': f"Bearer {session['access_token']}"
     }
 
     # limit: range 1-50
+    numSongs = new_playlist_info['num_songs'] 
+    if new_playlist_info['num_songs'] > 50:
+        numSongs = 50
+
     params = {
-        'limit': new_playlist_info['num_songs'] 
+        'limit': numSongs
     }
     
     response = requests.get(API_BASE_URL + "me/top/tracks", headers=headers, params=params)
@@ -154,56 +152,15 @@ def get_host_top_tracks():
 
     items = resp_json['items']
     for item in items:
-        track_ids.append(item['id'])
-    return redirect('/get_host_recs')
-    
-'''
-Purpose: Gets recommended tracks based on a user's top tracks
-'''
-@app.route('/get_host_recs')
-def get_host_recs(): 
-    ### WORK ON
-    # genre filtering should happen before we make recommendations
-    # Future: to filter songs by genre: get artist's genre, and see if any of 
-    # the genre filters match (if curr_genre_filter in artistGenres)
-    
-    #for i in range(0, len(track_ids), 5):
-    if 'access_token' not in session:
-        return redirect('/login')
+        track_uris.append(item['uri'])
 
-    if datetime.now().timestamp() > session['expires_at']:
-        return redirect('/refresh_token')
-
-    headers = {
-        'Authorization': f"Bearer {session['access_token']}",
-    }
-
-    #five_track_ids = track_ids[i : i + 5]
-    params = { 
-        'seed_tracks': track_ids[0] # limit of 5
-    }
-
-    #'limit': new_playlist_info['num_songs'] # later: change to 100, cuz we'll be filtering the songs down next by genre
-
-    response = requests.get(API_BASE_URL + "recommendations", headers=headers, params=params)
-    #resp_json = response.dump() ## error is here!!
-    
-    print("HERE")
-    print(response.url)
-
-    '''tracks = resp_json['tracks']
-    for track in tracks:
-        recommended_tracks.append(track['uri']) '''
-
-    return "hi"
-    #return redirect('/add_songs')
+    return redirect('/add_songs')
 
 '''
-Purpose: Adds recommended tracks to created playlist
+Purpose: Adds tracks to created playlist
 '''
 @app.route('/add_songs')
 def add_songs():
-    print("GETS HERE >> add_songs")   
     if 'access_token' not in session:
         return redirect('/login')
     
@@ -214,7 +171,7 @@ def add_songs():
         'Authorization': f"Bearer {session['access_token']}"
     }
     json = {
-        'uris': recommended_tracks
+        'uris': track_uris
     }
 
     response = requests.post(API_BASE_URL + "playlists/" + new_playlist_info['playlist_id'] + "/tracks", 
